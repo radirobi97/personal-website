@@ -1,4 +1,4 @@
-baseURL = "http://www.examhue.com"
+baseURL = "https://radirobi97.github.io/personal-website/"
 title = "robertradi"
 theme = "hugo-coder"
 languageCode = "en"
