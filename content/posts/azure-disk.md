@@ -20,7 +20,7 @@ One way to store data in Azure is using Azure Managed disks. Furthermore, disks 
 ## Basics
 
 * disks are independent first-class resources, meaning they can live on their own. This was not always the case, because at the beginning disks were a part of storage accounts. So, limits of storage accounts had to be taken into consideration. To be completely correct, that is the case today as well, however it is abstracted from the end-customers. If you want to explore this, visit one of your disks, and choose disk export. The domain indicates that this is a storage account indeed under-the-hood. 
-![disk export](/images/disk_export.png)
+![disk export](/images/disk_export.webp)
 * disks can take the advantage of using RBAC
 * snapshot can be taken to provide consistent backups. These snapshots can be incremental or full.
 * disks have their own limits for IOPS, throughput
