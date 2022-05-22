@@ -1,4 +1,5 @@
-baseURL = "https://radirobi97.github.io/personal-website/"
+baseURL = "https://radirobi97.github.io/"
+# baseURL = "https://radirobi97.github.io/personal-website/"
 title = "robertradi"
 theme = "hugo-coder"
 languageCode = "en"
