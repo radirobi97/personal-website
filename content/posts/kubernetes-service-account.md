@@ -31,7 +31,7 @@ Service accounts exist in the context of Kubernetes. These are native namespaced
 We can attach a service account to a POD, and then the POD will be able to send requests to the api-server. What happens if we do not define a service account explicitly? In that case, the service account admission controller will attach the default service account to the POD. 
 
 Wait a minute.. What kind of default service account? As I mentioned, service accounts are tied to a specific namespace. When we create a new namespace a default service account will be created by default as well. Furthermore, a secret will be created.   
-![kubernetes-default-sa](/images/kubernetes_default_sa.png)
+![kubernetes-default-sa](/personal-website/images/kubernetes_default_sa.png)
 
 The secret two main things:
 * CA cert (this is the CA which signs the certificates in the cluster)
