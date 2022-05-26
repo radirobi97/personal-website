@@ -69,16 +69,16 @@ One way to store data in Azure is using Azure Managed disks. Furthermore, disks 
    * Ultra disk is a good choice for database storage.
 
 # Disk SKUs and VM SKUs
-Every type of disks has its own SKU. This SKU defines the capabilities and limits of a given disk. You can see one example on the following pictuce.
+Every type of disks has its own SKU. This SKU defines the capabilities and limits of a given disk. You can see one example on the following pictuce.    
 ![disk-sku](/personal-website/images/disk_sku.png)
 Some explanations to the attributes:
-* **Disk Size*: how much data can be stored on the disk
+* **Disk Size**: how much data can be stored on the disk
 * **Price per month**: the monthly price of the disk
 * **Max IOPS (Max IOPS w/ bursting)**: How many IOPS the disk can offer with and without bursing. Bursting discussed at a later section of this post.
 * **Max throughput (Max throughput w/ bursting)**: How much throughput the dis can offer with and without bursting.
 * **Price per mount per month (Shared Disk)**: Premium SSD and ultra disks can be attached to multiple VMs at the same time. We will pay this amount of money for each mount.
 
-It is important to know that not only the disks but each VMs has its own limits and values for IOPS and throughput as well:
+It is important to know that not only the disks but each VMs has its own limits and values for IOPS and throughput as well: 
 ![vm-sku](/personal-website/images/vm_sku.png)
 A powerful disk is not worth anything without a proper VM. We should differentiate two different scenarios:
 * When the VM could handle more IOPS/throughput than the disk can offer: we can say that the workload is IO/throughput capped on the disk level.
