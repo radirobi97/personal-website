@@ -1,12 +1,13 @@
 +++
 author = "Robert Radi"
-title = "Kubernetes Service Account and their tokens"
+title = "Kubernetes Service Accounts and Service Account Token Volume Projection"
 date = "2022-01-15"
 description = "This article gives an in-depth look  into service accounts in Kubernetes."
 tags = [
     "kubernetes",
     "serviceaccount",
     "apiserver",
+    "tokenreview",
 ]
 categories = [
     "kubernetes",
@@ -120,6 +121,169 @@ If we want to do more complicated things, for example list out the pods in the d
 ```
 
 By default, service accounts has almost no permissions. You can assign permissions to service accounts by using Roles, ClusterRoles, RoleBindings, ClusterRoleBindings. But this is a completely another topic and I am not going to discuss it in this article. 
+
+## Service Account Token Volume Projection
+What's the problem with default Service Account tokens? Here is the decoded content of a Service Account token.
+
+```json
+{
+  "iss": "kubernetes/serviceaccount",
+  "kubernetes.io/serviceaccount/namespace": "demo",
+  "kubernetes.io/serviceaccount/secret.name": "default-token-gs4b4",
+  "kubernetes.io/serviceaccount/service-account.name": "default",
+  "kubernetes.io/serviceaccount/service-account.uid": "94249f6d-76a4-47ef-9d29-ca7f32d9cd9d",
+  "sub": "system:serviceaccount:demo:default"
+}
+```
+
+* they do not have an expiration time
+* there is no audience claim
+* they are stored as secrets so every POD which has the proper RBAC role can use this token. This is a security risk.
+
+A new feature has been introduced which makes possible to request token from the **TokenRequest** API. This token will be mounted to the POD as a projected volume. This token will have an expiration time, issuer and an audience as well. Kubelet has the responsibility to rotate this tokens. To be able to use this feature the **BoundServiceAccountTokenVolume** feature gate should be enabled on the API Server.
+
+Let's create a busybox POD, create a new service account and attach to it. 
+
+**Create the namespace**: `kubectl create ns test`
+
+**Create the Service Account**: `kubectl create sa -n test busybox`
+
+**Create the busybox POD and extract the projected volume token.**
+
+*busybox.yaml*
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox 
+  namespace: test
+spec:
+  containers:
+  - image: busybox
+    command:
+    - sleep
+    - "3600"
+    name: busybox
+    volumeMounts:
+    - mountPath: /var/run/secrets/tokens
+      name: new-token
+  serviceAccountName: busybox
+  volumes:
+  - name: new-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          path: new-token
+          expirationSeconds: 7200
+          audience: new
+```
+
+```bash
+kubectl apply -f busybox.yaml -n test
+TOKEN=$(kubectl exec -ti busybox -n test -- cat /var/run/secrets/tokens/new-token)
+echo $TOKEN
+```
+
+Let's see the **content** of this JWT token.
+```yaml
+{
+  "aud": [
+    "new"
+  ],
+  "exp": 1653819541,
+  "iat": 1653812341,
+  "iss": "https://<API-SERVER-IDENTIFIER>.privatelink.centralus.azmk8s.io",
+  "kubernetes.io": {
+    "namespace": "test",
+    "pod": {
+      "name": "busybox",
+      "uid": "4440bcc4-2e4b-4e30-af70-11116075b149"
+    },
+    "serviceaccount": {
+      "name": "busybox",
+      "uid": "8gf6a92d-8fc6-4475-8573-00230c6cebc94"
+    }
+  },
+  "nbf": 1653812341,
+  "sub": "system:serviceaccount:test:busybox"
+}
+```
+This token has an audience (**aud**), issuer (**iss**) claims, and an expiration date (**exp**). Kubelet will rotate this token every 24 hours or at the 80% of the expiration time mark for this token.
+
+If we want to get more information about the token, we can call the **TokenReview** by using a privileged account. The token we want to gather more information about will be included in the body of the request. 
+
+**Create the privileged account**: `kubectl apply -f admin-sa.yaml -n test`
+
+*admin-sa.yaml*
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-sa
+  namespace: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: role-tokenreview-binding
+  namespace: test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: admin-sa
+  namespace: test
+```
+
+Let's call the **TokenReview** endpoint. Please note, the **aud** you have defined for the service account volume projection should match one of the audiences in the **--api-audiences** of the API server.  
+
+```bash
+ADMIN_TOKEN=$(kubectl get sa admin-sa -n test -o jsonpath="{.secrets[0].name}" | xargs kubectl get secrets -n test -o jsonpath="{.data.token}" | base64 --decode)
+TOKEN=$(kubectl exec -ti busybox -n test -- cat /var/run/secrets/tokens/new-token)
+curl -k -X "POST" "https://<API-SERVER-IDENTIFIER>.privatelink.centralus.azmk8s.io:443/apis/authentication.k8s.io/v1/tokenreviews" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d $"{
+    \"kind\": \"TokenReview\",
+    \"apiVersion\": \"authentication.k8s.io/v1\",
+    \"spec\": {
+      \"token\": \"$TOKEN\"
+    }
+  }"
+```
+
+The response will be something like this:
+```yaml
+{
+  "kind": "TokenReview",
+  "apiVersion": "authentication.k8s.io/v1",
+  "metadata": {},
+  "spec": {
+    "token": "<TOKEN>"
+  },
+  "status": {
+    "authenticated": true,
+    "user": {
+      "username": "system:serviceaccount:test:busybox",
+      "uid": "988892d-8776-4475-8573-fdv0442ebc94",
+      "groups": [
+        "system:serviceaccounts",
+        "system:serviceaccounts:test",
+        "system:authenticated"
+      ],
+      "extra": {
+        "authentication.kubernetes.io/pod-name": ["busybox"],
+        "authentication.kubernetes.io/pod-uid": ["c55f50db-0000-1111-aca1-c55f50db"]
+      }
+    },
+    "audiences": [
+      "new"
+    ]
+  }
+}
+```
 
 ## Bonus
 If you want to see the REST calls sent by your kubectl CLI, use the *-v 6* flag in your commands.
