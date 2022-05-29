@@ -21,7 +21,7 @@ One way to store data in Azure is using Azure Managed disks. Furthermore, disks 
 
 * disks are independent first-class resources, meaning they can live on their own. This was not always the case, because at the beginning disks were a part of storage accounts. So, limits of storage accounts had to be taken into consideration. To be completely correct, that is the case today as well, however it is abstracted from the end-customers. If you want to explore this, visit one of your disks, and choose disk export. The domain indicates that this is a storage account indeed under-the-hood. 
 
-![disk export](/images/disk_export.webp#center)
+![disk export](/personal-website/images/disk_export.webp#center)
 
 * disks can take the advantage of using RBAC
 * snapshot can be taken to provide consistent backups. These snapshots can be incremental or full.
@@ -69,17 +69,17 @@ One way to store data in Azure is using Azure Managed disks. Furthermore, disks 
    * Ultra disk is a good choice for database storage.
 
 # Disk SKUs and VM SKUs
-Every type of disks has its own SKU. This SKU defines the capabilities and limits of a given disk. You can see one example on the following pictuce.
-![disk-sku](/images/disk_sku.png)
+Every type of disks has its own SKU. This SKU defines the capabilities and limits of a given disk. You can see one example on the following pictuce.    
+![disk-sku](/personal-website/images/disk_sku.png)
 Some explanations to the attributes:
-* **Disk Size*: how much data can be stored on the disk
+* **Disk Size**: how much data can be stored on the disk
 * **Price per month**: the monthly price of the disk
 * **Max IOPS (Max IOPS w/ bursting)**: How many IOPS the disk can offer with and without bursing. Bursting discussed at a later section of this post.
 * **Max throughput (Max throughput w/ bursting)**: How much throughput the dis can offer with and without bursting.
 * **Price per mount per month (Shared Disk)**: Premium SSD and ultra disks can be attached to multiple VMs at the same time. We will pay this amount of money for each mount.
 
-It is important to know that not only the disks but each VMs has its own limits and values for IOPS and throughput as well:
-![vm-sku](/images/vm_sku.png)
+It is important to know that not only the disks but each VMs has its own limits and values for IOPS and throughput as well: 
+![vm-sku](/personal-website/images/vm_sku.png)
 A powerful disk is not worth anything without a proper VM. We should differentiate two different scenarios:
 * When the VM could handle more IOPS/throughput than the disk can offer: we can say that the workload is IO/throughput capped on the disk level.
 * When the disk offers more IOPS/throughput than the VM can handle: we can say that the workload is IO/throughput capped on the VM level. 
@@ -87,7 +87,7 @@ If we are working with network based storage, the network limits of the VM shoul
 
 # Host cache
 Probably you have noticed on the previous picture that there is something called a cached or uncached IOPS/throughput. This has to do with the feature called "host caching". When you attach a disk to the VM, you have the option to define whether to use host caching on that particular disk.
-![host-cache](/images/host_cache.png)
+![host-cache](/personal-website/images/host_cache.png)
 Host cache is all about bringing the data closer to the VM to be able to perform the reads, writes quicker. The documentation of every VM states how large this host cache could be. 
 
 There are different types of host caching.
@@ -98,7 +98,7 @@ There are different types of host caching.
 But what is cached IOPS and uncached IOPS? For the sake of simplicity we will discuss IOPS but the same applies for throughput as well. How each IO operation count into these limits?
 
 ##### using read only host cache
-![host-cache-limit](/images/host_cache_limits.png)
+![host-cache-limit](/personal-website/images/host_cache_limits.png)
 * First of all lets take a read operation. If the data is present in the cache then it will be read from the cache. It will count into cached limits of the VM. This is illustrated on the above picture by black arrows. If the data is not present in the cache, then first the data will be read from the disk into cache, and after that from the cache into the VM. So, this operation counts into the cached limits and into the uncached limits as well. 
 * What about a write operation? It will also count into both of the limits due to the data first will be written into the cache, and after that from the cach into the disk.
 
