@@ -6,7 +6,7 @@ aliases = ["about", "contact"]
 author = "Robert Radi"
 +++
 
-DevOps Engineer in the cloud, especially on Azure and GCP. Focusing on building higly available products using microsevice based architectures on Kubernetes. Supporting the various development lifecycles by developing CI/CD pipelines with Jenkins. Ensuring the SLAs by adding monitoring, tracing, observability to applications using Prometheus, Grafana, Alertmanager, OpsGenie. Making business value by migrating onpremise legacy systems in to the cloud.
+DevOps Engineer in the cloud, especially on Azure and GCP. Focusing on building highly available products using microsevice based architectures on Kubernetes. Supporting the various development lifecycles by developing CI/CD pipelines with Jenkins. Ensuring the SLAs by adding monitoring, tracing, observability to applications using Prometheus, Grafana, Alertmanager, OpsGenie. Making business value by migrating onpremise legacy systems in to the cloud.
 
 Techstack:
 * **Containerization**: Docker, Kubernetes, cgroups, namespaces
@@ -18,3 +18,5 @@ Techstack:
 * **Scripting**: Python, GO
 * **Database**: MySQL, BigQuery
 * **OS**: Linux, Ubuntu, CentOS
+
+Trying to share experiences by posting technical deep dives on this personal website. 
