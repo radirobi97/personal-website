@@ -63,6 +63,9 @@ The obvious drawback using the “Local” external traffic policy, is that traf
 
 The Cloud Loadbalance is only aware of Nodes, not PODs so it wont know how many PODs are on the given nodes. The cloud LB will route the traffic between the nodes equally. 
 
-If our workload has a much more pods, and those PODs are distributed on the different node, the imbalance problem will be less meaningful. See below:
+If our workload has a much more pods, and those PODs are distributed on different nodes, the imbalance problem will be less meaningful. See below:
 
 ![traffic-imbalanced](/personal-website/images/balanced.png#center)
+
+## Conclusion
+If you want to reduce the network hops you should definitely go with the Local option. Furthermore, most cases due to security reasons you want to be aware of the client's IPs. As for my experiences, I am using mostly the Local option, because most of my ingresses has the `nginx.ingress.kubernetes.io/whitelist-source-range` annotation. 
