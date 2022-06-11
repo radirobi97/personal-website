@@ -32,18 +32,37 @@ The offical documentation says: ExternalTrafficPolicy denotes if this Service de
 ## Comparison of Local and Cluster
 
 #### externalTrafficPolicy: Cluster
-This is the default value for services. It provides an equally distributed traffic between PODs irregardles of where the PODs are located. However, this method could add extra network hops to the traffic if the target POD is on a different node. 
+This is the default value for services. It provides an equally distributed traffic between PODs regardless of where the PODs are located. However, this method could add extra network hops to the traffic if the target POD is on a different node. 
 Also this mechanism introduces the usage of SNAT-ting (source network address translation). SNAT results in loss of IP of the client. 
 
 You probably ask why SNAT is needed? Lets take what happens if we use only DNAT. Lets image a scenario where the Load Balacner forwards the traffic to a node however the target POD is on a different node. Thats why we use Cluster as externalTrafficPolicy. Here is the flow:
 
-![traffic-flow](/personal-website/images/without_snat.png)
+![traffic-without-snat](/personal-website/images/without_snat.png)
 
 1. Client hits the Load Balancer and the LB will route the traffic to one of the nodes. 
-2. On the node, kube-proxy handles the incoming traffic, modifes the destination in the packet and forwards the packet to the other node. On this node kube-proxy forwards the traffic to the destination POD. 
+2. On the node, kube-proxy handles the incoming traffic, modifes the destination in the packet -this is the DNAT - and forwards the packet to the other node. On this node kube-proxy forwards the traffic to the destination POD (on the picture above the connection arrow is direct between the first node and the POD, however the traffic goes through the kube-proxy of the second node as well.)
+3. The target POD recieves the packet, and tries to answer for that. It sets the SRC as its IP and the destination will be the client. 
+4. Because the packet is from the POD to the client it will be NAT-ed to the internet. However, this packet will be dropped. Why? Because the client sent a packet to the load balancer, it didnt send the packet to the VM or this POD. So, the TCP session is not able to complete. 
 
+Let's see how SNAT-ting solves this problem. The figure is almost the same. The difference, when the packet reaches the first VM we do a second NAT, the SNAT. The source will be the IP of the node, the destination will be the pod. 
 
+![traffic-with-snat](/personal-website/images/with_snat.png)
 
+4. This time the TCP session is able to complete, because the source and destination matches.
+5. The traffic goes back to the first node, where the node will unnat the packet twice. The result of this unNAT is the packet where the source is the LB and the DST is the client. 
 
-In Kubernetes we host applications in a containerized manner. 
-externalTrafficPolicy=local is an annotation on the Kubernetes service resource that can be set to preserve the client source IP. When this value is set, the actual IP address of a client (e.g., a browser or mobile application) is propagated to the Kubernetes service instead of the IP address of the node.
+The obvious drawback of the SNAT is that the target POD is not able to see the client's IP address thats why we want to use sometimes the Local settings.
+
+#### externalTrafficPolicy: Local
+
+In this case, kube-proxy will proxies the traffic only to pods that exist on the same node (local) as opposed to every pod regardless of where it was placed (Cluster). It ensures that the target POD will be able to see the client's IP address (because we dont have to use SNAT) and will be no extra network hops. 
+
+The obvious drawback using the “Local” external traffic policy, is that traffic to our application may be imbalanced. See this on the following picture.
+
+![traffic-imbalanced](/personal-website/images/imbalance.png)
+
+The Cloud Loadbalance is only aware of Nodes, not PODs so it wont know how many PODs are on the given nodes. The cloud LB will route the traffic between the nodes equally. 
+
+If our workload has a much more pods, and those PODs are distributed on the different node, the imbalance problem will be less meaningful. See below:
+
+![traffic-imbalanced](/personal-website/images/balanced.png)
