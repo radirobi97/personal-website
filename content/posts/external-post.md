@@ -23,11 +23,11 @@ The offical documentation says: ExternalTrafficPolicy denotes if this Service de
 
 * **Cluster**: The traffic hits one of the nodes, however the target POD is on a different node. Using Cluster mode as ExternalTrafficPolicy makes possible for kube-proxy to forward the traffic to a different node. See this on the figure below. 
 
-![traffic-flow](/personal-website/images/traffic_flow.png)
+![traffic-flow](/personal-website/images/traffic_flow.png#center)
 
 * **Local**:  The traffic hits one of the nodes. In case of Local as ExternalTrafficPolicy kube proxy is only able to route the traffic locally. Meaning, only to PODs which are on the same node. 
 
-![traffic-flow](/personal-website/images/local_external.png)
+![traffic-flow](/personal-website/images/local_external.png#center)
 
 ## Comparison of Local and Cluster
 
@@ -37,7 +37,7 @@ Also this mechanism introduces the usage of SNAT-ting (source network address tr
 
 You probably ask why SNAT is needed? Lets take what happens if we use only DNAT. Lets image a scenario where the Load Balacner forwards the traffic to a node however the target POD is on a different node. Thats why we use Cluster as externalTrafficPolicy. Here is the flow:
 
-![traffic-without-snat](/personal-website/images/without_snat.png)
+![traffic-without-snat](/personal-website/images/without_snat.png#center)
 
 1. Client hits the Load Balancer and the LB will route the traffic to one of the nodes. 
 2. On the node, kube-proxy handles the incoming traffic, modifes the destination in the packet -this is the DNAT - and forwards the packet to the other node. On this node kube-proxy forwards the traffic to the destination POD (on the picture above the connection arrow is direct between the first node and the POD, however the traffic goes through the kube-proxy of the second node as well.)
@@ -46,7 +46,7 @@ You probably ask why SNAT is needed? Lets take what happens if we use only DNAT.
 
 Let's see how SNAT-ting solves this problem. The figure is almost the same. The difference, when the packet reaches the first VM we do a second NAT, the SNAT. The source will be the IP of the node, the destination will be the pod. 
 
-![traffic-with-snat](/personal-website/images/with_snat.png)
+![traffic-with-snat](/personal-website/images/with_snat.png#center)
 
 4. This time the TCP session is able to complete, because the source and destination matches.
 5. The traffic goes back to the first node, where the node will unnat the packet twice. The result of this unNAT is the packet where the source is the LB and the DST is the client. 
@@ -59,10 +59,10 @@ In this case, kube-proxy will proxies the traffic only to pods that exist on the
 
 The obvious drawback using the “Local” external traffic policy, is that traffic to our application may be imbalanced. See this on the following picture.
 
-![traffic-imbalanced](/personal-website/images/imbalance.png)
+![traffic-imbalanced](/personal-website/images/imbalance.png#center)
 
 The Cloud Loadbalance is only aware of Nodes, not PODs so it wont know how many PODs are on the given nodes. The cloud LB will route the traffic between the nodes equally. 
 
 If our workload has a much more pods, and those PODs are distributed on the different node, the imbalance problem will be less meaningful. See below:
 
-![traffic-imbalanced](/personal-website/images/balanced.png)
+![traffic-imbalanced](/personal-website/images/balanced.png#center)
